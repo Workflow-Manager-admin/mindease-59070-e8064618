@@ -13,32 +13,13 @@ const moodList = [
   { value: 1, emoji: "😭", color: "#F47272", label: "Very Sad" },
 ];
 
-// Simulate GPT summary & tip (mock will suffice for UI)
-function mockGptResponse(journalText, moodScore) {
-  let sampleSummary =
-    "You seem to have had a moderate day with mixed feelings. It's okay to feel this way.";
-  let sampleTip =
-    "Take a deep breath and do something kind for yourself today! 💛";
-  if (moodScore >= 4) {
-    sampleSummary =
-      "You had a positive day, full of good vibes and energy!";
-    sampleTip = "Keep it up! Take a moment to celebrate the small wins! 🌟";
-  }
-  if (moodScore <= 2) {
-    sampleSummary =
-      "It's been a tough day emotionally. Remember, lows are temporary.";
-    sampleTip = "Try a short walk, or talk to a friend. You are not alone. 🫂";
-  }
-  if (journalText && journalText.length > 25) {
-    sampleSummary += " Journaling helps bring clarity to your feelings.";
-  }
-  return {
-    summary: sampleSummary,
-    tip: sampleTip,
-  };
-}
+/**
+ * PUBLIC_INTERFACE
+ * MoodTracker implements mood selection (emoji scale), journal form,
+ * and displays GPT-generated feedback (from real API) below input.
+ */
+const GPT_API_URL = "/api/gpt-analyze"; // Placeholder: update to your backend endpoint.
 
-// PUBLIC_INTERFACE
 function MoodTracker() {
   const [mood, setMood] = useState(null); // value: 1...5
   const [journal, setJournal] = useState("");
@@ -55,23 +36,58 @@ function MoodTracker() {
     );
   };
 
-  // On form submit, save mood and call GPT mock
-  const handleSubmit = (e) => {
+  // PUBLIC_INTERFACE
+  // On form submit, save mood and call GPT API for insights/tip.
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    // Must select a mood
+    setFeedback(null);
+
     if (!mood) {
       setError("Please select your mood for today.");
       return;
     }
+
     setSaving(true);
     saveMood(mood, journal);
-    setTimeout(() => {
-      // Fake API call
-      const gptResp = mockGptResponse(journal, mood);
-      setFeedback(gptResp);
-      setSaving(false);
-    }, 700);
+
+    try {
+      // NETWORK INTEGRATION: Call real GPT feedback API.
+      // Replace GPT_API_URL with actual endpoint in production.
+      const response = await fetch(GPT_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          mood,
+          journal
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("There was a problem processing your entry. Please try again.");
+      }
+      const data = await response.json();
+
+      // Expected response shape: { summary: string, tip: string }
+      if (!data.summary || !data.tip) {
+        throw new Error("API response incomplete. Please try again later.");
+      }
+      setFeedback({
+        summary: data.summary,
+        tip: data.tip
+      });
+    } catch (err) {
+      // Show API/execution error in themed style
+      setError(
+        typeof err === "string"
+          ? err
+          : (err && err.message) || "Unexpected error occurred."
+      );
+      setFeedback(null);
+    }
+    setSaving(false);
   };
 
   return (
