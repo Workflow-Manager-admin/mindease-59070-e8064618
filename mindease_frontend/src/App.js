@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 
+import MoodTracker from "./MoodTracker";
 // Define the color scheme via CSS variables (will override App.css if inside a style tag)
 const themeStyle = {
   '--primary': '#4A90E2',
@@ -22,7 +23,7 @@ function MainContainer() {
 
   // Feature display mapping
   const featureComponents = {
-    mood: <MoodCheckInPlaceholder />,
+    mood: <MoodTracker />,
     journal: <JournalingPlaceholder />,
     tasks: <TaskPlanningPlaceholder />,
     music: <MusicSuggestionsPlaceholder />,
